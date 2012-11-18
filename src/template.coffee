@@ -133,19 +133,35 @@ class IfNode extends Node
         return nodelist.render(context)
     return ''
 
-doIf = (parser, token) ->
+
+makeIfCondition = (expr) ->
+  return (context) ->
+    return (new Function("with(this){return #{expr}}")).call(context)
+
+globalTags['if'] = (parser, token) ->
   # {% if ... %}
   conditionNodelists = []
 
   expr = token.contents.split(' ').slice(1).join(' ')
-  condition = (context) ->
-    return (new Function("with(this){return #{expr}}")).call(context)
-  nodelist = parser.parse(['endif'])
+  condition = makeIfCondition(expr)
+  nodelist = parser.parse(['elif', 'else', 'endif'])
+  conditionNodelists.push [condition, nodelist]
   token = parser.nextToken()
 
-  return new IfNode([[condition, nodelist]])
+  while token.contents.substr(0, 4) == 'elif'
+    expr = token.contents.split(' ').slice(1).join(' ')
+    condition = makeIfCondition(expr)
+    nodelist = parser.parse(['elif', 'else', 'endif'])
+    conditionNodelists.push [condition, nodelist]
+    token = parser.nextToken()
 
-globalTags['if'] = doIf
+  if token.contents == 'else'
+    nodelist = parser.parse(['endif'])
+    condition = (context) -> true
+    conditionNodelists.push [condition, nodelist]
+    token = parser.nextToken()
+
+  return new IfNode(conditionNodelists)
 
 
 template = '''
