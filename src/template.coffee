@@ -13,7 +13,7 @@ tagRe = new RegExp("(#{BLOCK_TAG_START}.*?#{BLOCK_TAG_END}|" +
   "#{VARIABLE_TAG_START}.*?#{VARIABLE_TAG_END}|" +
   "#{COMMENT_TAG_START}.*?#{COMMENT_TAG_END})")
 
-smartSplitRe = /\w+|(?:"|')[^"]+(?:'|")/g
+smartSplitRe = /\S+|(?:"|')[^"]+(?:'|")/g
 
 TOKEN_TEXT = 0
 TOKEN_VAR = 1
@@ -117,7 +117,11 @@ class NodeList
 class Variable
   constructor: (name) ->
     this.name = name
-    this.bits = this.name.split('.')
+    if this.name[0] == '"' or this.name[0] == "'" # Literal "variable"
+      value = this.name.slice(1, -1)
+      this.resolve = (context) -> return value
+    else
+      this.bits = this.name.split('.')
 
   resolve: (context) ->
     c = context

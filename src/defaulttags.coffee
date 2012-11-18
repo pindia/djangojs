@@ -17,14 +17,14 @@ makeIfCondition = (expr) ->
 djangoJS.tags['if'] = (parser, token) ->
   conditionNodelists = []
 
-  expr = token.contents.split(' ').slice(1).join(' ')
+  expr = token.splitContents().slice(1).join(' ')
   condition = makeIfCondition(expr)
   nodelist = parser.parse(['elif', 'else', 'endif'])
   conditionNodelists.push [condition, nodelist]
   token = parser.nextToken()
 
   while token.contents.substr(0, 4) == 'elif'
-    expr = token.contents.split(' ').slice(1).join(' ')
+    expr = token.splitContents().slice(1).join(' ')
     condition = makeIfCondition(expr)
     nodelist = parser.parse(['elif', 'else', 'endif'])
     conditionNodelists.push [condition, nodelist]
@@ -81,3 +81,19 @@ djangoJS.tags['for'] = (parser, token) ->
   else
     nodelistEmpty = new NodeList()
   return new ForNode(loopvar, sequence, nodelistLoop, nodelistEmpty)
+
+
+class CycleNode extends djangoJS.Node
+  constructor: (cyclevars) ->
+    this.cyclevars = cyclevars
+    this.i = 0
+
+  render: (context) ->
+    curvar = this.cyclevars[this.i % this.cyclevars.length]
+    this.i += 1
+    return curvar.resolve(context)
+
+djangoJS.tags['cycle'] = (parser, token) ->
+  vars = token.splitContents().slice(1)
+  return new CycleNode((new djangoJS.Variable(name) for name in vars))
+
