@@ -174,8 +174,10 @@ class VariableNode extends Node
     this.expr = new FilterExpression(expr)
 
   render: (context) ->
-    return this.expr.resolve(context)
-
+    value = this.expr.resolve(context)
+    if not value.safe
+      value = globalFilters.escape(value)
+    return value
 
 window.djangoJS =
   Template: Template
