@@ -15,6 +15,7 @@ tagRe = new RegExp("(#{BLOCK_TAG_START}.*?#{BLOCK_TAG_END}|" +
 
 smartSplitRe = /\S+|(?:"|')[^"]+(?:'|")/g
 
+
 TOKEN_TEXT = 0
 TOKEN_VAR = 1
 TOKEN_BLOCK = 2
@@ -65,6 +66,7 @@ class Lexer
     return token
 
 globalTags = {}
+globalFilters = {}
 
 class Parser
   constructor: (tokens) ->
@@ -131,7 +133,32 @@ class Variable
         return ''
     return c
 
+filterRe = /^([\w\.]+)|(?:\|(\w+))/y
 
+class FilterExpression
+  constructor: (expr) ->
+    this.filters = []
+    filterRe.lastIndex = 0
+    bits = filterRe.exec(expr)
+    while bits
+      console.log bits
+      if bits[1]
+        this.variable = new Variable(bits[0])
+      else if bits[2]
+        if bits[2] not of globalFilters
+          throw "invalid filter '#{bits[2]}'"
+        this.filters.push globalFilters[bits[2]]
+      bits = filterRe.exec(expr)
+    if filterRe.lastIndex != expr.length
+      throw "failed to parse remainder '#{expr.slice(filterRe.lastIndex)}' of filter expression"
+    if not this.variable
+      throw "empty variable expression"
+
+  resolve: (context) ->
+    value = this.variable.resolve(context)
+    for filter in this.filters
+      value = filter(value)
+    return value
 
 class Node
 
@@ -144,10 +171,10 @@ class TextNode extends Node
 
 class VariableNode extends Node
   constructor: (expr) ->
-    this.var = new Variable(expr)
+    this.expr = new FilterExpression(expr)
 
   render: (context) ->
-    return this.var.resolve(context)
+    return this.expr.resolve(context)
 
 
 window.djangoJS =
@@ -157,3 +184,4 @@ window.djangoJS =
   Node: Node
   NodeList: NodeList
   tags: globalTags
+  filters: globalFilters

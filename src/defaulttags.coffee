@@ -97,3 +97,8 @@ djangoJS.tags['cycle'] = (parser, token) ->
   vars = token.splitContents().slice(1)
   return new CycleNode((new djangoJS.Variable(name) for name in vars))
 
+djangoJS.filters['escape'] = (value) ->
+  return value.replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
