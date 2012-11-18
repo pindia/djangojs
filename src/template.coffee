@@ -99,6 +99,14 @@ class Parser
   nextToken: ->
     return this.tokens.shift()
 
+  skipPast: (endTag) ->
+    while this.tokens.length > 0
+      token = this.nextToken()
+      if token.type == TOKEN_BLOCK and token.contents == endTag
+        return
+    throw "unclosed block tag '#{endTag}'"
+
+
 
 class NodeList
   constructor: ->

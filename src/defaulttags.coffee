@@ -97,6 +97,15 @@ djangoJS.tags['cycle'] = (parser, token) ->
   vars = token.splitContents().slice(1)
   return new CycleNode((new djangoJS.Variable(name) for name in vars))
 
+class CommentNode extends djangoJS.Node
+  render: (context) ->
+    return ''
+
+djangoJS.tags['comment'] = (parser, token) ->
+  parser.skipPast('endcomment')
+  return new CommentNode()
+
+
 djangoJS.filters['escape'] = (value) ->
   return value.toString().replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
