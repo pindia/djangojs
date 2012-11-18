@@ -3,8 +3,27 @@
 <head>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
     <script src="src/template.js"></script>
+    <script src="src/test.js"></script>
 </head>
 <body>
+
+<table cellpadding="5">
+    <tr>
+        <td valign="top">
+            <h3>Template</h3>
+            <textarea rows="20" cols="50" id="template"></textarea>
+            <h3>Context</h3>
+            <textarea rows="5" cols="50" id="context"></textarea>
+            <p><button id="render">Render</button></p>
+        </td>
+        <td valign="top">
+            <h3>Output</h3>
+            <textarea rows="30" cols="50" id="output" readonly></textarea>
+        </td>
+
+    </tr>
+</table>
+
 
 </body>
 </html>

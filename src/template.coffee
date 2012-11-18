@@ -149,11 +149,13 @@ globalTags['if'] = doIf
 
 
 template = '''
-{% if condition == 5 %}
+{% if condition > 5 %}
+  {% if condition == 6 %}
+    Equals 6
+  {% endif %}
   <li>{{variable}}</li>
 {% endif %}
 <b>Always here</b>
 '''
 
-l = new Template(template)
-console.log l.render({variable: 'test', condition: 5})
+this.Template = Template
