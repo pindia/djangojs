@@ -31,9 +31,7 @@ class Template
     this.nodelist = p.parse()
 
   render: (context) ->
-    for node in this.nodelist
-      console.log node, node.render(context)
-    return (node.render(context) for node in this.nodelist).join('')
+    return this.nodelist.render(context)
 
 
 class Lexer
@@ -61,23 +59,49 @@ class Lexer
       token = new Token(TOKEN_TEXT, tokenString)
     return token
 
+globalTags = {}
+
 class Parser
   constructor: (tokens) ->
     this.tokens = tokens
-    this.tags = {}
+    this.tags = globalTags
 
-  parse: ->
-    nodelist = []
+  parse: (parseUntil=[]) ->
+    nodelist = new NodeList()
     while this.tokens.length > 0
       token = this.nextToken()
       if token.type == TOKEN_TEXT
         nodelist.push new TextNode token.contents
       else if token.type == TOKEN_VAR
         nodelist.push new VariableNode token.contents
+      else if token.type == TOKEN_BLOCK
+        command = token.contents.split(' ')[0]
+        if command in parseUntil
+          this.tokens.unshift(token) # put token back on token list so calling code knows why it terminated
+          return nodelist
+        # execute callback function for this tag and append resulting node
+        func = this.tags[command]
+        if not func?
+          throw "Invalid block tag '#{command}'"
+        result = func(this, token)
+        console.log result
+        nodelist.push result
+
     return nodelist
 
   nextToken: ->
     return this.tokens.shift()
+
+
+class NodeList
+  constructor: ->
+    this._list = []
+
+  push: (node) ->
+    this._list.push node
+
+  render: (context) ->
+    return (node.render(context) for node in this._list).join('')
 
 class Node
 
@@ -98,12 +122,38 @@ class VariableNode extends Node
     else
       return ''
 
+class IfNode extends Node
+  constructor: (conditionNodelists) ->
+    this.conditionNodelists = conditionNodelists
+
+  render: (context) ->
+    for cn in this.conditionNodelists
+      [condition, nodelist] = cn
+      if condition(context)
+        return nodelist.render(context)
+    return ''
+
+doIf = (parser, token) ->
+  # {% if ... %}
+  conditionNodelists = []
+
+  expr = token.contents.split(' ').slice(1).join(' ')
+  condition = (context) ->
+    return (new Function("with(this){return #{expr}}")).call(context)
+  nodelist = parser.parse(['endif'])
+  token = parser.nextToken()
+
+  return new IfNode([[condition, nodelist]])
+
+globalTags['if'] = doIf
+
 
 template = '''
 {% if condition == 5 %}
   <li>{{variable}}</li>
 {% endif %}
+<b>Always here</b>
 '''
 
 l = new Template(template)
-console.log l.render({variable: 'test'})
+console.log l.render({variable: 'test', condition: 5})
