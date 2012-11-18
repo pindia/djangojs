@@ -13,6 +13,8 @@ tagRe = new RegExp("(#{BLOCK_TAG_START}.*?#{BLOCK_TAG_END}|" +
   "#{VARIABLE_TAG_START}.*?#{VARIABLE_TAG_END}|" +
   "#{COMMENT_TAG_START}.*?#{COMMENT_TAG_END})")
 
+smartSplitRe = /\w+|(?:"|')[^"]+(?:'|")/g
+
 TOKEN_TEXT = 0
 TOKEN_VAR = 1
 TOKEN_BLOCK = 2
@@ -22,6 +24,9 @@ class Token
   constructor: (type, contents) ->
     this.type = type
     this.contents = contents
+
+  splitContents: ->
+    return this.contents.match(smartSplitRe)
 
 class Template
   constructor: (templateString) ->
@@ -140,103 +145,11 @@ class VariableNode extends Node
   render: (context) ->
     return this.var.resolve(context)
 
-class IfNode extends Node
-  constructor: (conditionNodelists) ->
-    this.conditionNodelists = conditionNodelists
 
-  render: (context) ->
-    for cn in this.conditionNodelists
-      [condition, nodelist] = cn
-      if condition(context)
-        return nodelist.render(context)
-    return ''
-
-
-makeIfCondition = (expr) ->
-  return (context) ->
-    return (new Function("with(this){return #{expr}}")).call(context)
-
-globalTags['if'] = (parser, token) ->
-  conditionNodelists = []
-
-  expr = token.contents.split(' ').slice(1).join(' ')
-  condition = makeIfCondition(expr)
-  nodelist = parser.parse(['elif', 'else', 'endif'])
-  conditionNodelists.push [condition, nodelist]
-  token = parser.nextToken()
-
-  while token.contents.substr(0, 4) == 'elif'
-    expr = token.contents.split(' ').slice(1).join(' ')
-    condition = makeIfCondition(expr)
-    nodelist = parser.parse(['elif', 'else', 'endif'])
-    conditionNodelists.push [condition, nodelist]
-    token = parser.nextToken()
-
-  if token.contents == 'else'
-    nodelist = parser.parse(['endif'])
-    condition = (context) -> true
-    conditionNodelists.push [condition, nodelist]
-    token = parser.nextToken()
-
-  return new IfNode(conditionNodelists)
-
-class ForNode extends Node
-  constructor: (loopvar, sequence, nodelistLoop, nodelistEmpty) ->
-    this.loopvar = loopvar
-    this.sequence = new Variable(sequence)
-    this.nodelistLoop = nodelistLoop
-    this.nodelistEmpty = nodelistEmpty
-
-  render: (_context) ->
-    context = $.extend({}, _context) # Copy context to avoid mutation at higher level
-    if 'forloop' of context
-      context['parentloop'] = context['forloop']
-    values = this.sequence.resolve(context)
-    valuesLen = values.length
-    if valuesLen == 0
-      return this.nodelistEmpty.render(context)
-    nodelist = new NodeList()
-    loopDict = context['forloop'] = {}
-    for i in [0...valuesLen]
-      loopDict['counter0'] = i
-      loopDict['counter'] = i + 1
-      loopDict['revcounter'] = valuesLen - i
-      loopDict['revcounter0'] = valuesLen - i - 1
-      loopDict['first'] = i == 0
-      loopDict['last'] = i == valuesLen - 1
-      context[this.loopvar] = values[i]
-      for node in this.nodelistLoop._list
-        nodelist.push node.render(context)
-    return nodelist.render(context)
-
-globalTags['for'] = (parser, token) ->
-  bits = token.contents.split(' ')
-  loopvar = bits[1]
-  if bits[2] != 'in'
-    throw "for tag must follow format 'for <loopvar> in <seq>'"
-  sequence = bits[3]
-  nodelistLoop = parser.parse(['empty', 'endfor'])
-  token = parser.nextToken()
-  if token.contents == 'empty'
-    nodelistEmpty = parser.parse(['endfor'])
-    token = parser.nextToken()
-  else
-    nodelistEmpty = new NodeList()
-  return new ForNode(loopvar, sequence, nodelistLoop, nodelistEmpty)
-
-
-
-
-
-
-template = '''
-{% if condition > 5 %}
-  {% if condition == 6 %}
-    Equals 6
-  {% endif %}
-  <li>{{variable}}</li>
-{% endif %}
-<b>Always here</b>
-'''
-
-this.Template = Template
+window.djangoJS =
+  Template: Template
+  Variable: Variable
+  Token: Token
+  Node: Node
+  NodeList: NodeList
+  tags: globalTags

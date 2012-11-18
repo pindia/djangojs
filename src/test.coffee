@@ -7,7 +7,7 @@ $ ->
     localStorage.setItem('context', context)
 
     try
-      l = new Template(template)
+      l = new djangoJS.Template(template)
       $('#output').val(l.render(JSON.parse(context)))
     catch e
       console.log e

@@ -1,0 +1,83 @@
+class IfNode extends djangoJS.Node
+  constructor: (conditionNodelists) ->
+    this.conditionNodelists = conditionNodelists
+
+  render: (context) ->
+    for cn in this.conditionNodelists
+      [condition, nodelist] = cn
+      if condition(context)
+        return nodelist.render(context)
+    return ''
+
+
+makeIfCondition = (expr) ->
+  return (context) ->
+    return (new Function("with(this){return #{expr}}")).call(context)
+
+djangoJS.tags['if'] = (parser, token) ->
+  conditionNodelists = []
+
+  expr = token.contents.split(' ').slice(1).join(' ')
+  condition = makeIfCondition(expr)
+  nodelist = parser.parse(['elif', 'else', 'endif'])
+  conditionNodelists.push [condition, nodelist]
+  token = parser.nextToken()
+
+  while token.contents.substr(0, 4) == 'elif'
+    expr = token.contents.split(' ').slice(1).join(' ')
+    condition = makeIfCondition(expr)
+    nodelist = parser.parse(['elif', 'else', 'endif'])
+    conditionNodelists.push [condition, nodelist]
+    token = parser.nextToken()
+
+  if token.contents == 'else'
+    nodelist = parser.parse(['endif'])
+    condition = (context) -> true
+    conditionNodelists.push [condition, nodelist]
+    token = parser.nextToken()
+
+  return new IfNode(conditionNodelists)
+
+class ForNode extends djangoJS.Node
+  constructor: (loopvar, sequence, nodelistLoop, nodelistEmpty) ->
+    this.loopvar = loopvar
+    this.sequence = new djangoJS.Variable(sequence)
+    this.nodelistLoop = nodelistLoop
+    this.nodelistEmpty = nodelistEmpty
+
+  render: (_context) ->
+    context = $.extend({}, _context) # Copy context to avoid mutation at higher level
+    if 'forloop' of context
+      context['parentloop'] = context['forloop']
+    values = this.sequence.resolve(context)
+    valuesLen = values.length
+    if valuesLen == 0
+      return this.nodelistEmpty.render(context)
+    nodelist = new djangoJS.NodeList()
+    loopDict = context['forloop'] = {}
+    for i in [0...valuesLen]
+      loopDict['counter0'] = i
+      loopDict['counter'] = i + 1
+      loopDict['revcounter'] = valuesLen - i
+      loopDict['revcounter0'] = valuesLen - i - 1
+      loopDict['first'] = i == 0
+      loopDict['last'] = i == valuesLen - 1
+      context[this.loopvar] = values[i]
+      for node in this.nodelistLoop._list
+        nodelist.push node.render(context)
+    return nodelist.render(context)
+
+djangoJS.tags['for'] = (parser, token) ->
+  bits = token.contents.split(' ')
+  loopvar = bits[1]
+  if bits[2] != 'in'
+    throw "for tag must follow format 'for <loopvar> in <seq>'"
+  sequence = bits[3]
+  nodelistLoop = parser.parse(['empty', 'endfor'])
+  token = parser.nextToken()
+  if token.contents == 'empty'
+    nodelistEmpty = parser.parse(['endfor'])
+    token = parser.nextToken()
+  else
+    nodelistEmpty = new NodeList()
+  return new ForNode(loopvar, sequence, nodelistLoop, nodelistEmpty)
