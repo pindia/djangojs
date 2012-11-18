@@ -23,8 +23,20 @@ class Token
     this.type = type
     this.contents = contents
 
-class Lexer
+class Template
+  constructor: (templateString) ->
+    l = new Lexer(templateString)
+    tokens = l.tokenize()
+    p = new Parser(tokens)
+    this.nodelist = p.parse()
 
+  render: (context) ->
+    for node in this.nodelist
+      console.log node, node.render(context)
+    return (node.render(context) for node in this.nodelist).join('')
+
+
+class Lexer
   constructor: (templateString) ->
     this.templateString = templateString
 
@@ -38,7 +50,6 @@ class Lexer
     return result
 
   createToken: (tokenString, inTag) ->
-    console.log tokenString, inTag
     if inTag
       if tokenString.substr(0, 2) == VARIABLE_TAG_START
         token = new Token(TOKEN_VAR, tokenString.slice(2, -2).trim())
@@ -50,11 +61,49 @@ class Lexer
       token = new Token(TOKEN_TEXT, tokenString)
     return token
 
+class Parser
+  constructor: (tokens) ->
+    this.tokens = tokens
+    this.tags = {}
+
+  parse: ->
+    nodelist = []
+    while this.tokens.length > 0
+      token = this.nextToken()
+      if token.type == TOKEN_TEXT
+        nodelist.push new TextNode token.contents
+      else if token.type == TOKEN_VAR
+        nodelist.push new VariableNode token.contents
+    return nodelist
+
+  nextToken: ->
+    return this.tokens.shift()
+
+class Node
+
+class TextNode extends Node
+  constructor: (s) ->
+    this.s = s
+
+  render: (context) ->
+    return this.s
+
+class VariableNode extends Node
+  constructor: (expr) ->
+    this.expr = expr
+
+  render: (context) ->
+    if this.expr of context
+      return context[this.expr]
+    else
+      return ''
+
+
 template = '''
 {% if condition == 5 %}
   <li>{{variable}}</li>
 {% endif %}
 '''
 
-l = new Lexer(template)
-console.log l.tokenize()
+l = new Template(template)
+console.log l.render({variable: 'test'})
