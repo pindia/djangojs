@@ -109,6 +109,21 @@ class NodeList
         bits.push node
     return bits.join('')
 
+class Variable
+  constructor: (name) ->
+    this.name = name
+    this.bits = this.name.split('.')
+
+  resolve: (context) ->
+    c = context
+    for bit in this.bits
+      c = c[bit]
+      if c is undefined
+        return ''
+    return c
+
+
+
 class Node
 
 class TextNode extends Node
@@ -120,13 +135,10 @@ class TextNode extends Node
 
 class VariableNode extends Node
   constructor: (expr) ->
-    this.expr = expr
+    this.var = new Variable(expr)
 
   render: (context) ->
-    if this.expr of context
-      return context[this.expr]
-    else
-      return ''
+    return this.var.resolve(context)
 
 class IfNode extends Node
   constructor: (conditionNodelists) ->
@@ -171,7 +183,7 @@ globalTags['if'] = (parser, token) ->
 class ForNode extends Node
   constructor: (loopvar, sequence, nodelistLoop, nodelistEmpty) ->
     this.loopvar = loopvar
-    this.sequence = sequence
+    this.sequence = new Variable(sequence)
     this.nodelistLoop = nodelistLoop
     this.nodelistEmpty = nodelistEmpty
 
@@ -179,7 +191,7 @@ class ForNode extends Node
     context = $.extend({}, _context) # Copy context to avoid mutation at higher level
     if 'forloop' of context
       context['parentloop'] = context['forloop']
-    values = context[this.sequence] or []
+    values = this.sequence.resolve(context)
     valuesLen = values.length
     if valuesLen == 0
       return this.nodelistEmpty.render(context)
