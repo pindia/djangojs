@@ -141,7 +141,7 @@ class Variable
         return ''
     return c
 
-filterRe = /^([\w\.]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/y
+filterRe = /^([\S\.]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/y
 
 class FilterExpression
   constructor: (expr) ->
@@ -150,7 +150,6 @@ class FilterExpression
     filterRe.lastIndex = 0
     bits = filterRe.exec(expr)
     while bits
-      console.log bits
       if bits[1]
         this.variable = new Variable(bits[0])
       else if bits[2]
@@ -166,7 +165,6 @@ class FilterExpression
       throw "empty variable expression"
 
   resolve: (context) ->
-    console.log this.filters
     value = this.variable.resolve(context)
     for i in [0...this.filters.length]
       arg = this.filterArgs[i]?.resolve(context)
@@ -192,6 +190,35 @@ class VariableNode extends Node
       value = globalFilters.escape(value)
     return value
 
+#class SimpleTagNode extends Node
+#  constructor: (args) ->
+#    this.args = args
+#
+#  render: (context) ->
+
+
+simpleTag = (fn) ->
+  return (parser, token) ->
+    bits = token.splitContents()
+    args = (new FilterExpression(bit) for bit in bits.slice(1))
+    return {
+      render: (context) ->
+        return fn.apply(null, [context].concat(arg.resolve(context) for arg in args))
+    }
+
+inclusionTag = (subTemplate, fn) ->
+  return (parser, token) ->
+    bits = token.splitContents()
+    args = (new FilterExpression(bit) for bit in bits.slice(1))
+    return {
+      render: (context) ->
+        subContext = fn.apply(null, [context].concat(arg.resolve(context) for arg in args))
+        console.log subContext
+        return subTemplate.render(subContext)
+    }
+
+
+
 window.djangoJS =
   Template: Template
   Variable: Variable
@@ -201,3 +228,5 @@ window.djangoJS =
   NodeList: NodeList
   tags: globalTags
   filters: globalFilters
+  simpleTag: simpleTag
+  inclusionTag: inclusionTag

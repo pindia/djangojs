@@ -79,7 +79,7 @@ djangoJS.tags['for'] = (parser, token) ->
     nodelistEmpty = parser.parse(['endfor'])
     token = parser.nextToken()
   else
-    nodelistEmpty = new NodeList()
+    nodelistEmpty = new djangoJS.NodeList()
   return new ForNode(loopvar, sequence, nodelistLoop, nodelistEmpty)
 
 
