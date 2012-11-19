@@ -117,3 +117,8 @@ djangoJS.filters['safe'] = (value) ->
   s = new String(value)
   s.safe = true
   return s
+
+djangoJS.filters['default'] = (value, arg) ->
+  if not value
+    return arg
+  return value

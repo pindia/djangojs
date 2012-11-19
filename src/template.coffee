@@ -141,11 +141,12 @@ class Variable
         return ''
     return c
 
-filterRe = /^([\S\.]+)|(?:\|(\S+))/y
+filterRe = /^([\w\.]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/y
 
 class FilterExpression
   constructor: (expr) ->
     this.filters = []
+    this.filterArgs = []
     filterRe.lastIndex = 0
     bits = filterRe.exec(expr)
     while bits
@@ -156,6 +157,8 @@ class FilterExpression
         if bits[2] not of globalFilters
           throw "invalid filter '#{bits[2]}'"
         this.filters.push globalFilters[bits[2]]
+        this.filterArgs.push if bits[3] then new Variable(bits[3]) else null
+
       bits = filterRe.exec(expr)
     if filterRe.lastIndex != expr.length
       throw "failed to parse remainder '#{expr.slice(filterRe.lastIndex)}' of filter expression"
@@ -163,9 +166,11 @@ class FilterExpression
       throw "empty variable expression"
 
   resolve: (context) ->
+    console.log this.filters
     value = this.variable.resolve(context)
-    for filter in this.filters
-      value = filter(value)
+    for i in [0...this.filters.length]
+      arg = this.filterArgs[i]?.resolve(context)
+      value = this.filters[i](value, arg)
     return value
 
 class Node
