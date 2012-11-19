@@ -155,6 +155,8 @@ and would output something like:
 
     The current time is November 18th 2012, 5:01:53 pm.
 
+Note that because the value of assignment tags are output with normal variables, they are subject to auto-escaping.
+
 ### Raw tags
 
 Up until now, we've been able to take advantage of convenience wrappers to register tags. But to make a more complex tag like the built-in `if` and `for` tags, we have to drop down a level of abstraction.

@@ -190,13 +190,6 @@ class VariableNode extends Node
       value = globalFilters.escape(value)
     return value
 
-#class SimpleTagNode extends Node
-#  constructor: (args) ->
-#    this.args = args
-#
-#  render: (context) ->
-
-
 simpleTag = (fn) ->
   return (parser, token) ->
     bits = token.splitContents()
@@ -217,7 +210,19 @@ inclusionTag = (subTemplate, fn) ->
         return subTemplate.render(subContext)
     }
 
-
+assignmentTag = (fn) ->
+  return (parser, token) ->
+    bits = token.splitContents()
+    if bits[bits.length - 2] != 'as'
+      throw 'Invalid assignment tag invocation, expected {% <tag> <args..> as <var> %}'
+    varname = bits[bits.length - 1]
+    args = (new FilterExpression(bit) for bit in bits.slice(1, -2))
+    return {
+    render: (context) ->
+      val = fn.apply(null, [context].concat(arg.resolve(context) for arg in args))
+      context[varname] = val
+      return ''
+    }
 
 window.djangoJS =
   Template: Template
@@ -230,3 +235,4 @@ window.djangoJS =
   filters: globalFilters
   simpleTag: simpleTag
   inclusionTag: inclusionTag
+  assignmentTag: assignmentTag
