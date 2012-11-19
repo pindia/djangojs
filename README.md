@@ -167,11 +167,12 @@ Let's see what the `current_time` tag looks like as a raw tag:
 
 ```javascript
 function CurrentTimeNode(timeFormat){
+    var expr = new djangoJS.FilterExpression(timeFormat);
     this.render = function(context){
-        return moment().format(timeFormat);
+        return moment().format(expr.resolve(context));
     };
 }
-djangoJS.tags['current-time'] = function(parser, token){
+djangoJS.tags['current_time'] = function(parser, token){
     var bits = token.splitContents();
     var timeFormat = bits[1];
     return new CurrentTimeNode(timeFormat);
@@ -182,5 +183,35 @@ Just like the simple tag, this can be invoked as
 
     {% current_time 'MMMM Do YYYY, h:mm:ss a' %}
 
-The `Node` object returned by the compilation function is required to have a single method `render(context)`, which returns the text to be inserted given a context. The compilation function generates this node using methods of its arguments `parser` and `token`:
+The `Node` object returned by the compilation function is required to have a single method `render(context)`, which returns the text to be inserted given a context. The compilation function generates a node using methods of the `token` argument:
+
+* `token.contents`: The raw contents of the tag invocation, including the tag name but not including the tag delimiters. In this example `"current_time 'MMMM Do YYYY, h:mm:ss a'"`.
+* `token.splitContents()`: The contents of the tag, split on spaces not enclosed in quotes. Use this instead of `token.contents.split(' ')`. In this example `["current_time", "'MMMM Do YYYY, h:mm:ss a'"]`.
+
+The compilation function splits out the argument to `current_time` and passes it to the node as `timeFormat`. The node constructor then creates a `FilterExpression` from the format. This object is responsible for resolving the expression into a value at render time. In the case of a literal string it simply returns the string, but if the argument was a variable it would be looked up in the context. And in both cases, any filters applied are parsed at compile time and executed at run time.
+
+Clearly this example is more elegant as a simple tag. Let's look at an example that must be done this way: a tag `{% upper %}...{% endupper %}` that transforms its contents to uppercase.
+
+```javascript
+function UpperNode(nodelist){
+    this.render = function(context){
+        return nodelist.render(context).toUpperCase();
+    };
+}
+djangoJS.tags['upper'] = function(parser, token){
+    var nodelist = parser.parse(['endupper']);
+    parser.nextToken()
+    return new UpperNode(nodelist);
+}
+```
+
+Here the compilation function is using methods of the `parser` argument:
+
+* `parser.parse(endTags)`: Parses nodes until one of the tags specified in the endTags array is encountered, returning a `NodeList` of all nodes parsed. Leaves the end tag in the parser.
+* `parser.nextToken()`: Parses the next token and returns it.
+* `parser.skipPast(endTag)`: Parses nodes until the specified endTag, throwing away the result. Differs from `parse` in that it will not choke on invalid or unbalanced tags.
+
+The compilation function first uses `parse` to parse until the `endupper` tag. This leaves the `endupper` tag in the parser, so `nextToken` clears it out. In some cases the token would need to be saved and examined to distinguish between different close tags, but here it is not necessary. The `UpperNode` is passed the nodelist consisting of the block body.
+
+The `UpperNode` itself simply renders its child nodelist normally, then calls `toUpperCase()` on it before returning it.
 

@@ -141,7 +141,7 @@ class Variable
         return ''
     return c
 
-filterRe = /^([\w\.]+)|(?:\|(\w+))/y
+filterRe = /^([\S\.]+)|(?:\|(\S+))/y
 
 class FilterExpression
   constructor: (expr) ->
@@ -190,6 +190,7 @@ class VariableNode extends Node
 window.djangoJS =
   Template: Template
   Variable: Variable
+  FilterExpression: FilterExpression
   Token: Token
   Node: Node
   NodeList: NodeList
