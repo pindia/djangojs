@@ -148,7 +148,7 @@ class Variable
     for bit in this.bits
       c = c[bit]
       if c is undefined
-        return ''
+        return undefined
     return c
 
 filterRe = /^([^|]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/y

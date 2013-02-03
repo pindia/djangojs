@@ -71,6 +71,28 @@ test 'filters', ->
   equalIgnoreSpace(t.render({variable: 'Test'}), 'Test')
   equalIgnoreSpace(t.render({}), 'test')
 
+test 'yesno filter', ->
+  equal(renderTemplate('{{x|yesno}}', {x: true}), 'yes')
+  equal(renderTemplate('{{x|yesno}}', {x: false}), 'no')
+  equal(renderTemplate('{{x|yesno}}', {x: null}), 'no')
+  equal(renderTemplate('{{x|yesno}}', {x: undefined}), 'no')
+  equal(renderTemplate('{{x|yesno:"affirmative,negative"}}', {x: true}), 'affirmative')
+  equal(renderTemplate('{{x|yesno:"affirmative,negative"}}', {x: false}), 'negative')
+  equal(renderTemplate('{{x|yesno:"affirmative,negative"}}', {x: null}), 'negative')
+  equal(renderTemplate('{{x|yesno:"affirmative,negative"}}', {x: undefined}), 'negative')
+  equal(renderTemplate('{{x|yesno:"affirmative,negative,unknown"}}', {x: true}), 'affirmative')
+  equal(renderTemplate('{{x|yesno:"affirmative,negative,unknown"}}', {x: false}), 'negative')
+  equal(renderTemplate('{{x|yesno:"affirmative,negative,unknown"}}', {x: null}), 'unknown')
+  equal(renderTemplate('{{x|yesno:"affirmative,negative,unknown"}}', {x: undefined}), 'unknown')
+
+test 'pluralize filter', ->
+  equal(renderTemplate('{{n}} second{{n|pluralize}}', {n: 1}), '1 second')
+  equal(renderTemplate('{{n}} second{{n|pluralize}}', {n: 2}), '2 seconds')
+  equal(renderTemplate('{{n}} walrus{{n|pluralize}}', {n: 1}), '1 walrus')
+  equal(renderTemplate('{{n}} walrus{{n|pluralize:"es"}}', {n: 2}), '2 walruses')
+  equal(renderTemplate('{{n}} {{n|pluralize:"person,people"}}', {n: 1}), '1 person')
+  equal(renderTemplate('{{n}} {{n|pluralize:"person,people"}}', {n: 2}), '2 people')
+
 test 'auto-escaping', ->
   t = new djangoJS.Template '{{variable}}'
   equalIgnoreSpace(t.render({variable: '<b>hi</b>'}), '&lt;b&gt;hi&lt;/b&gt;', 'automatic escape')

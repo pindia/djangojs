@@ -48,6 +48,8 @@ class ForNode extends djangoJS.Node
   render: (_context) ->
     context = $.extend({}, _context) # Copy context to avoid mutation at higher level
     values = this.sequence.resolve(context)
+    if not values?
+      return this.nodelistEmpty.render(context)
     valuesLen = values.length
     if valuesLen == 0
       return this.nodelistEmpty.render(context)
@@ -133,4 +135,28 @@ djangoJS.filters['default'] = (value, arg) ->
     return arg
   return value
 
-djangoJS.filters['lower'] = (value) -> value.toLowerCase()
+djangoJS.filters['pluralize'] = (value, arg='s') ->
+  bits = arg.split(',')
+  if value == 1
+    if bits.length > 1
+      return bits[0]
+    return ''
+  if bits.length > 1
+    return bits[1]
+  if bits.length == 1
+    return bits[0]
+
+djangoJS.filters['yesno'] = (value, arg='yes,no') ->
+  bits = arg.split(',')
+  if not value?
+    if bits[2]
+      return bits[2]
+    return bits[1]
+  if value
+    return bits[0]
+  return bits[1]
+
+djangoJS.filters['upper'] = (value) ->
+  return value.toUpperCase()
+djangoJS.filters['lower'] = (value) ->
+  return value.toLowerCase()
