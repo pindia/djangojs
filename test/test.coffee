@@ -1,4 +1,4 @@
-renderTemplate = (template, context) ->
+renderTemplate = (template, context={}) ->
   t = new djangoJS.Template(template)
   return t.render(context)
 
@@ -63,3 +63,22 @@ test 'auto-escaping', ->
   equalIgnoreSpace(t.render({variable: '<b>hi</b>'}), '<b>hi</b>', 'automatic escape suppressed')
   t = new djangoJS.Template('{{"<b>hi</b>"}}')
   equalIgnoreSpace(t.render({}), '<b>hi</b>', 'literal string not affected')
+
+test 'simple tag', ->
+  djangoJS.tags['say_hello'] = djangoJS.simpleTag (context, name) ->
+    return "Hello, #{name}!"
+  equalIgnoreSpace(renderTemplate("{% say_hello 'World' %}"), 'Hello, World!')
+  equalIgnoreSpace(renderTemplate("{% say_hello language %}", {language: 'Django'}), 'Hello, Django!')
+
+test 'inclusion tag', ->
+  t = new djangoJS.Template 'Hello, {{name}}!'
+  djangoJS.tags['say_hello'] = djangoJS.inclusionTag t, (context, name) ->
+    return {name: name}
+  equalIgnoreSpace(renderTemplate("{% say_hello 'World' %}"), 'Hello, World!')
+  equalIgnoreSpace(renderTemplate("{% say_hello language %}", {language: 'Django'}), 'Hello, Django!')
+
+test 'assignment tag', ->
+  djangoJS.tags['get_hello'] = djangoJS.assignmentTag (context, name) ->
+    return "Hello, #{name}!"
+  equalIgnoreSpace(renderTemplate("{% get_hello 'World' as greeting %}{{greeting}}"), 'Hello, World!')
+  equalIgnoreSpace(renderTemplate("{% get_hello language as greeting %}{{greeting}}", {language: 'Django'}), 'Hello, Django!')
