@@ -64,6 +64,11 @@ test 'auto-escaping', ->
   t = new djangoJS.Template('{{"<b>hi</b>"}}')
   equalIgnoreSpace(t.render({}), '<b>hi</b>', 'literal string not affected')
 
+test 'comments', ->
+  equalIgnoreSpace(renderTemplate('Hello {# World #} Django!'), 'Hello Django!')
+  equalIgnoreSpace(renderTemplate('Hello {# {% test %} {{ %} #} Django!'), 'Hello Django!')
+  equalIgnoreSpace(renderTemplate('Hello {% comment %} World \n {% test %} }} {% endcomment %} Django!'), 'Hello Django!')
+
 test 'simple tag', ->
   djangoJS.tags['say_hello'] = djangoJS.simpleTag (context, name) ->
     return "Hello, #{name}!"
