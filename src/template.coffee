@@ -21,6 +21,11 @@ TOKEN_VAR = 1
 TOKEN_BLOCK = 2
 TOKEN_COMMENT = 3
 
+markSafe = (string) ->
+  s = new String(string)
+  s.safe = true
+  return s
+
 class Token
   constructor: (type, contents) ->
     this.type = type
@@ -91,7 +96,6 @@ class Parser
         if not func?
           throw "Invalid block tag '#{command}'"
         result = func(this, token)
-        console.log result
         nodelist.push result
 
     return nodelist
@@ -128,7 +132,7 @@ class Variable
   constructor: (name) ->
     this.name = name
     if this.name[0] == '"' or this.name[0] == "'" # Literal "variable"
-      value = this.name.slice(1, -1)
+      value = markSafe(this.name.slice(1, -1))
       this.resolve = (context) -> return value
     else
       this.bits = this.name.split('.')
@@ -141,7 +145,7 @@ class Variable
         return ''
     return c
 
-filterRe = /^([\S\.]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/y
+filterRe = /^([^|]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/y
 
 class FilterExpression
   constructor: (expr) ->
@@ -149,6 +153,7 @@ class FilterExpression
     this.filterArgs = []
     filterRe.lastIndex = 0
     bits = filterRe.exec(expr)
+    console.log bits
     while bits
       if bits[1]
         this.variable = new Variable(bits[0])
@@ -206,7 +211,6 @@ inclusionTag = (subTemplate, fn) ->
     return {
       render: (context) ->
         subContext = fn.apply(null, [context].concat(arg.resolve(context) for arg in args))
-        console.log subContext
         return subTemplate.render(subContext)
     }
 

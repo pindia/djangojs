@@ -122,3 +122,5 @@ djangoJS.filters['default'] = (value, arg) ->
   if not value
     return arg
   return value
+
+djangoJS.filters['lower'] = (value) -> value.toLowerCase()
