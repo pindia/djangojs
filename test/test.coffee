@@ -37,6 +37,16 @@ test 'for tag', ->
   throws ->
     new djangoJS.template '{% for i seq %}{% endfor %}'
 
+test 'nested for tags', ->
+  t = new djangoJS.Template '''
+  {% for i in seq1 %}
+    {% for j in seq2 %}
+      {{forloop.parentloop.counter}}, {{forloop.counter}}, {{i}}, {{j}}
+    {% endfor %}
+  {% endfor %}
+  '''
+  equalIgnoreSpace(t.render({seq1: ['a', 'b'], seq2: ['c', 'd']}), '1, 1, a, c 1, 2, a, d 2, 1, b, c 2, 2, b, d')
+
 test 'filters', ->
   t = new djangoJS.Template '{{variable|lower}}'
   equalIgnoreSpace(t.render({variable: 'Test'}), 'test')

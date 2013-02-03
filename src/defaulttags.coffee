@@ -47,14 +47,15 @@ class ForNode extends djangoJS.Node
 
   render: (_context) ->
     context = $.extend({}, _context) # Copy context to avoid mutation at higher level
-    if 'forloop' of context
-      context['parentloop'] = context['forloop']
     values = this.sequence.resolve(context)
     valuesLen = values.length
     if valuesLen == 0
       return this.nodelistEmpty.render(context)
     nodelist = new djangoJS.NodeList()
-    loopDict = context['forloop'] = {}
+    loopDict = {}
+    if 'forloop' of context
+      loopDict['parentloop'] = context['forloop']
+    context['forloop'] = loopDict
     for i in [0...valuesLen]
       loopDict['counter0'] = i
       loopDict['counter'] = i + 1
