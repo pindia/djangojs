@@ -59,10 +59,16 @@ class Lexer
     return result
 
   createToken: (tokenString, inTag) ->
-    if inTag
+    if inTag and tokenString.substr(0, 2) == BLOCK_TAG_START
+      blockContent = tokenString.slice(2, -2).trim()
+      if this.verbatim and blockContent == 'endverbatim'
+        this.verbatim = false
+    if inTag and not this.verbatim
       if tokenString.substr(0, 2) == VARIABLE_TAG_START
         token = new Token(TOKEN_VAR, tokenString.slice(2, -2).trim())
       else if tokenString.substr(0, 2) == BLOCK_TAG_START
+        if blockContent == 'verbatim'
+          this.verbatim = true
         token = new Token(TOKEN_BLOCK, tokenString.slice(2, -2).trim())
       else if tokenString.substr(0, 2) == COMMENT_TAG_START
         token = new Token(TOKEN_COMMENT, '')

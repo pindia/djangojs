@@ -106,6 +106,15 @@ djangoJS.tags['comment'] = (parser, token) ->
   parser.skipPast('endcomment')
   return new CommentNode()
 
+class VerbatimNode extends djangoJS.Node
+  constructor: (content) -> this.content = content
+  render: (context) -> return this.content
+
+djangoJS.tags['verbatim'] = (parser, token) ->
+  nodelist = parser.parse(['endverbatim'])
+  parser.nextToken()
+  return new VerbatimNode(nodelist.render({}))
+
 
 djangoJS.filters['escape'] = (value) ->
   return value.toString().replace(/&/g, '&amp;')
