@@ -151,15 +151,15 @@ class Variable
         return undefined
     return c
 
-filterRe = /^([^|]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/y
+filterRe = /([^|]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/g
 
 class FilterExpression
   constructor: (expr) ->
     this.filters = []
     this.filterArgs = []
     filterRe.lastIndex = 0
+    upto = 0
     bits = filterRe.exec(expr)
-    console.log bits
     while bits
       if bits[1]
         this.variable = new Variable(bits[0])
@@ -168,9 +168,9 @@ class FilterExpression
           throw "invalid filter '#{bits[2]}'"
         this.filters.push globalFilters[bits[2]]
         this.filterArgs.push if bits[3] then new Variable(bits[3]) else null
-
+      upto = filterRe.lastIndex
       bits = filterRe.exec(expr)
-    if filterRe.lastIndex != expr.length
+    if upto != expr.length
       throw "failed to parse remainder '#{expr.slice(filterRe.lastIndex)}' of filter expression"
     if not this.variable
       throw "empty variable expression"
