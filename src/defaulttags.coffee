@@ -1,4 +1,4 @@
-class IfNode extends djangoJS.Node
+class IfNode extends Templar.Node
   constructor: (conditionNodelists) ->
     this.conditionNodelists = conditionNodelists
 
@@ -14,7 +14,7 @@ makeIfCondition = (expr) ->
   return (context) ->
     return (new Function("with(this){return #{expr}}")).call(context)
 
-djangoJS.tags['if'] = (parser, token) ->
+Templar.tags['if'] = (parser, token) ->
   conditionNodelists = []
 
   expr = token.splitContents().slice(1).join(' ')
@@ -38,10 +38,10 @@ djangoJS.tags['if'] = (parser, token) ->
 
   return new IfNode(conditionNodelists)
 
-class ForNode extends djangoJS.Node
+class ForNode extends Templar.Node
   constructor: (loopvar, sequence, nodelistLoop, nodelistEmpty) ->
     this.loopvar = loopvar
-    this.sequence = new djangoJS.Variable(sequence)
+    this.sequence = new Templar.Variable(sequence)
     this.nodelistLoop = nodelistLoop
     this.nodelistEmpty = nodelistEmpty
 
@@ -53,7 +53,7 @@ class ForNode extends djangoJS.Node
     valuesLen = values.length
     if valuesLen == 0
       return this.nodelistEmpty.render(context)
-    nodelist = new djangoJS.NodeList()
+    nodelist = new Templar.NodeList()
     loopDict = {}
     if 'forloop' of context
       loopDict['parentloop'] = context['forloop']
@@ -70,7 +70,7 @@ class ForNode extends djangoJS.Node
         nodelist.push node.render(context)
     return nodelist.render(context)
 
-djangoJS.tags['for'] = (parser, token) ->
+Templar.tags['for'] = (parser, token) ->
   bits = token.contents.split(' ')
   loopvar = bits[1]
   if bits[2] != 'in'
@@ -82,11 +82,11 @@ djangoJS.tags['for'] = (parser, token) ->
     nodelistEmpty = parser.parse(['endfor'])
     token = parser.nextToken()
   else
-    nodelistEmpty = new djangoJS.NodeList()
+    nodelistEmpty = new Templar.NodeList()
   return new ForNode(loopvar, sequence, nodelistLoop, nodelistEmpty)
 
 
-class CycleNode extends djangoJS.Node
+class CycleNode extends Templar.Node
   constructor: (cyclevars) ->
     this.cyclevars = cyclevars
     this.i = 0
@@ -96,28 +96,28 @@ class CycleNode extends djangoJS.Node
     this.i += 1
     return curvar.resolve(context)
 
-djangoJS.tags['cycle'] = (parser, token) ->
+Templar.tags['cycle'] = (parser, token) ->
   vars = token.splitContents().slice(1)
-  return new CycleNode((new djangoJS.Variable(name) for name in vars))
+  return new CycleNode((new Templar.Variable(name) for name in vars))
 
-class CommentNode extends djangoJS.Node
+class CommentNode extends Templar.Node
   render: (context) ->
     return ''
 
-djangoJS.tags['comment'] = (parser, token) ->
+Templar.tags['comment'] = (parser, token) ->
   parser.skipPast('endcomment')
   return new CommentNode()
 
-class VerbatimNode extends djangoJS.Node
+class VerbatimNode extends Templar.Node
   constructor: (content) -> this.content = content
   render: (context) -> return this.content
 
-djangoJS.tags['verbatim'] = (parser, token) ->
+Templar.tags['verbatim'] = (parser, token) ->
   nodelist = parser.parse(['endverbatim'])
   parser.nextToken()
   return new VerbatimNode(nodelist.render({}))
 
-class FilterNode extends djangoJS.Node
+class FilterNode extends Templar.Node
   constructor: (expr, nodelist) ->
     this.expr = expr
     this.nodelist = nodelist
@@ -127,32 +127,32 @@ class FilterNode extends djangoJS.Node
     context['_var'] = output
     return this.expr.resolve(context)
 
-djangoJS.tags['filter'] = (parser, token) ->
+Templar.tags['filter'] = (parser, token) ->
   bits = token.contents.split(' ')
-  expr = new djangoJS.FilterExpression("_var|#{bits[1]}")
+  expr = new Templar.FilterExpression("_var|#{bits[1]}")
   nodelist = parser.parse(['endfilter'])
   parser.nextToken()
   return new FilterNode(expr, nodelist)
 
 
-djangoJS.filters['escape'] = (value) ->
+Templar.filters['escape'] = (value) ->
   return value.toString().replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
 
-djangoJS.filters['safe'] = (value) ->
+Templar.filters['safe'] = (value) ->
   s = new String(value)
   s.safe = true
   return s
 
-djangoJS.filters['default'] = (value, arg) ->
+Templar.filters['default'] = (value, arg) ->
   if not value
     return arg
   return value
 
-djangoJS.filters['pluralize'] = (value, arg='s') ->
+Templar.filters['pluralize'] = (value, arg='s') ->
   bits = arg.split(',')
   if value == 1
     if bits.length > 1
@@ -163,7 +163,7 @@ djangoJS.filters['pluralize'] = (value, arg='s') ->
   if bits.length == 1
     return bits[0]
 
-djangoJS.filters['yesno'] = (value, arg='yes,no') ->
+Templar.filters['yesno'] = (value, arg='yes,no') ->
   bits = arg.split(',')
   if not value?
     if bits[2]
@@ -173,7 +173,7 @@ djangoJS.filters['yesno'] = (value, arg='yes,no') ->
     return bits[0]
   return bits[1]
 
-djangoJS.filters['upper'] = (value) ->
+Templar.filters['upper'] = (value) ->
   return value.toUpperCase()
-djangoJS.filters['lower'] = (value) ->
+Templar.filters['lower'] = (value) ->
   return value.toLowerCase()

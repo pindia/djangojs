@@ -234,7 +234,7 @@ assignmentTag = (fn) ->
       return ''
     }
 
-window.djangoJS =
+window.Templar =
   Template: Template
   Variable: Variable
   FilterExpression: FilterExpression

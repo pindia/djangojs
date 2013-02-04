@@ -1,14 +1,14 @@
 
-DjangoJS
+Templar
 ========
 
-DjangoJS is an implementation of the [Django template language](https://docs.djangoproject.com/en/1.4/topics/templates/) in JavaScript.
+Templar is an implementation of the [Django template language](https://docs.djangoproject.com/en/1.4/topics/templates/) in JavaScript.
 As with Django templates, it is not possible to embed raw JavaScript code into templates, but it is easy to extend with custom template tags and filters.
 
 ### Usage
 
 ```javascript
->>> var template = new djangoJS.Template('{{variable}}');
+>>> var template = new Templar.Template('{{variable}}');
 >>> var context = {variable: 42};
 >>> template.render(context);
 "42"
@@ -72,27 +72,27 @@ preventing the user from injecting JavaScript into the rendered document. To dis
 Extending
 ---------
 
-DjangoJS exports the two objects `djangoJS.tags` and `djangoJS.filters` that allow you to define new tags and filters.
+Templar exports the two objects `Templar.tags` and `Templar.filters` that allow you to define new tags and filters.
 
 ### Filters
 
-A filter is a simple function that takes either one or two arguments. The first argument is the value to be filtered, and the second is the argument passed to the filter, if applicable. Register a filter by assigning to `djangoJS.filters`:
+A filter is a simple function that takes either one or two arguments. The first argument is the value to be filtered, and the second is the argument passed to the filter, if applicable. Register a filter by assigning to `Templar.filters`:
 
 ```javascript
-djangoJS.filters['truncate'] = function(value, length){
+Templar.filters['truncate'] = function(value, length){
     return value.substr(0, length);
 };
-djangoJS.filters['lower'] = function(value){
+Templar.filters['lower'] = function(value){
     return value.toLowerCase();
 };
 ```
 
 ### Simple tags
 
-A simple tag is a tag that simply takes a number of arguments and returns a string after doing some processing. To register a simple tag, start by writing a function that takes the full template context and any tag arguments, and returns the value to insert. Then pass this function to `djangoJS.simpleTag`, and assign the result to `djangoJS.tags`:
+A simple tag is a tag that simply takes a number of arguments and returns a string after doing some processing. To register a simple tag, start by writing a function that takes the full template context and any tag arguments, and returns the value to insert. Then pass this function to `Templar.simpleTag`, and assign the result to `Templar.tags`:
 
 ```javascript
-djangoJS.tags['current_time'] = djangoJS.simpleTag(function(context, timeFormat){
+Templar.tags['current_time'] = Templar.simpleTag(function(context, timeFormat){
     return moment().format(timeFormat);
 });
 ```
@@ -109,11 +109,11 @@ Note that unlike variables, the output of simple tags is not subject to auto-esc
 
 ### Inclusion tags
 
-An inclusion tag is a tag that takes a number of arguments and renders *another* template, inserting the full result into the original template.  To register an inclusion tag, start by creating the sub-template that will be rendered. Then write a function that takes the full original template context and any tag arguments, and returns a context object that will be used as the context for the sub-template. Then pass the template and function to `djangoJS.inclusionTag`, and assign the result to `djangoJS.tags`:
+An inclusion tag is a tag that takes a number of arguments and renders *another* template, inserting the full result into the original template.  To register an inclusion tag, start by creating the sub-template that will be rendered. Then write a function that takes the full original template context and any tag arguments, and returns a context object that will be used as the context for the sub-template. Then pass the template and function to `Templar.inclusionTag`, and assign the result to `Templar.tags`:
 
 ```javascript
-var friendListTemplate = new djangoJS.Template('{% for friend in friends %}{{friend.name}}{% endfor %}');
-djangoJS.tags['friend_list'] = djangoJS.inclusionTag(friendListTemplate, function(context, friends){
+var friendListTemplate = new Templar.Template('{% for friend in friends %}{{friend.name}}{% endfor %}');
+Templar.tags['friend_list'] = Templar.inclusionTag(friendListTemplate, function(context, friends){
     return {friends: friends};
 });
 ```
@@ -125,7 +125,7 @@ Now, assuming the current template has the `friends` variable defined in its con
 The inclusion tag will pass the value of `friends` through to the sub-template, render it, and insert the result into the original template. In this example the function simply passed `friends` through as-is, but it is free to do any sort of processing on the arguments. For example, we could take advantage of having direct access to the template context to eliminate the `friends` argument:
 
 ```javascript
-djangoJS.tags['friend_list'] = djangoJS.inclusionTag(friendListTemplate, function(context){
+Templar.tags['friend_list'] = Templar.inclusionTag(friendListTemplate, function(context){
     return {friends: context.friends};
 });
 ```
@@ -138,10 +138,10 @@ However, this makes the tag much less flexible, since it assumes the existence o
 
 ### Assignment tags
 
-An assignment tag is just like a simple tag, except that instead of outputting the computed result it stores it into another context variable. An assignment tag is created with  `djangoJS.assignmentTag`, and assigned to `djangoJS.tags`:
+An assignment tag is just like a simple tag, except that instead of outputting the computed result it stores it into another context variable. An assignment tag is created with  `Templar.assignmentTag`, and assigned to `Templar.tags`:
 
 ```javascript
-djangoJS.tags['get_current_time'] = djangoJS.assignmentTag(function(context, timeFormat){
+Templar.tags['get_current_time'] = Templar.assignmentTag(function(context, timeFormat){
     return moment().format(timeFormat);
 });
 ```
@@ -163,18 +163,18 @@ Up until now, we've been able to take advantage of convenience wrappers to regis
 
 Internally, template processing is a two-step process. In the compilation step, the raw template string is translated into a series of `Node` objects, corresponding to tags, variables, and bits of raw text. Block tag `Node` objects have child nodes corresponding to the nodes contained within them. Then, in the rendering step, each `Node` determines what it should render, and parent nodes get to determine whether their child nodes should render zero times (`comment`, `if`), one time (`if`), or multiple times (`for`).
 
-Writing a raw tag is a similarly two-step process. First, define a Node class that knows how to render itself, then write a compilation function that initializes and returns an instance of your Node class given the template parser state and a token corresponding to your tag invocation. Finally, assign your compilation function directly to `djangoJS.tags`.
+Writing a raw tag is a similarly two-step process. First, define a Node class that knows how to render itself, then write a compilation function that initializes and returns an instance of your Node class given the template parser state and a token corresponding to your tag invocation. Finally, assign your compilation function directly to `Templar.tags`.
 
 Let's see what the `current_time` tag looks like as a raw tag:
 
 ```javascript
 function CurrentTimeNode(timeFormat){
-    var expr = new djangoJS.FilterExpression(timeFormat);
+    var expr = new Templar.FilterExpression(timeFormat);
     this.render = function(context){
         return moment().format(expr.resolve(context));
     };
 }
-djangoJS.tags['current_time'] = function(parser, token){
+Templar.tags['current_time'] = function(parser, token){
     var bits = token.splitContents();
     var timeFormat = bits[1];
     return new CurrentTimeNode(timeFormat);
@@ -200,7 +200,7 @@ function UpperNode(nodelist){
         return nodelist.render(context).toUpperCase();
     };
 }
-djangoJS.tags['upper'] = function(parser, token){
+Templar.tags['upper'] = function(parser, token){
     var nodelist = parser.parse(['endupper']);
     parser.nextToken()
     return new UpperNode(nodelist);

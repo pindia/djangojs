@@ -1,5 +1,5 @@
 renderTemplate = (template, context={}) ->
-  t = new djangoJS.Template(template)
+  t = new Templar.Template(template)
   return t.render(context)
 
 equalIgnoreSpace = (a, b, msg=undefined) ->
@@ -9,7 +9,7 @@ test 'basic use', ->
   equal(renderTemplate('{{variable}}', {variable: 42}), '42')
 
 test 'if tag', ->
-  t = new djangoJS.Template '''
+  t = new Templar.Template '''
     {% if i == 6 %}
       Equals 6
     {% elif i == 7 %}
@@ -24,7 +24,7 @@ test 'if tag', ->
 
 
 test 'for tag', ->
-  t = new djangoJS.Template '''
+  t = new Templar.Template '''
   {% for i in seq %}
       <li>{{forloop.counter}}: {{i}}</li>
   {% empty %}
@@ -35,10 +35,10 @@ test 'for tag', ->
   equalIgnoreSpace(t.render({seq: []}), 'No items.')
   equalIgnoreSpace(t.render({}), 'No items.')
   throws ->
-    new djangoJS.template '{% for i seq %}{% endfor %}'
+    new Templar.template '{% for i seq %}{% endfor %}'
 
 test 'nested for tags', ->
-  t = new djangoJS.Template '''
+  t = new Templar.Template '''
   {% for i in seq1 %}
     {% for j in seq2 %}
       {{forloop.parentloop.counter}}, {{forloop.counter}}, {{i}}, {{j}}
@@ -48,7 +48,7 @@ test 'nested for tags', ->
   equalIgnoreSpace(t.render({seq1: ['a', 'b'], seq2: ['c', 'd']}), '1, 1, a, c 1, 2, a, d 2, 1, b, c 2, 2, b, d')
 
 test 'verbatim tag', ->
-  t = new djangoJS.Template '''
+  t = new Templar.Template '''
     {% verbatim %}
       {% if x == 2 %}
         Test
@@ -62,7 +62,7 @@ test 'verbatim tag', ->
   equalIgnoreSpace(t.render({x: 2}), '{% if x == 2 %}Test{% endif %}Equals 2')
 
 test 'filter tag', ->
-  t = new djangoJS.Template '''
+  t = new Templar.Template '''
     {% filter lower %}
       Some test content {% if x == 5 %} INNER CONTENT {% endif %}
     {% endfilter %}
@@ -70,11 +70,11 @@ test 'filter tag', ->
   equalIgnoreSpace(t.render({x: 5}), 'some test content inner content')
 
 test 'filters', ->
-  t = new djangoJS.Template '{{variable|lower}}'
+  t = new Templar.Template '{{variable|lower}}'
   equalIgnoreSpace(t.render({variable: 'Test'}), 'test')
-  t = new djangoJS.Template '{{"Test"|lower}}'
+  t = new Templar.Template '{{"Test"|lower}}'
   equalIgnoreSpace(t.render({}), 'test')
-  t = new djangoJS.Template '{{variable|default:"test"}}'
+  t = new Templar.Template '{{variable|default:"test"}}'
   equalIgnoreSpace(t.render({variable: 'Test'}), 'Test')
   equalIgnoreSpace(t.render({}), 'test')
 
@@ -101,11 +101,11 @@ test 'pluralize filter', ->
   equal(renderTemplate('{{n}} {{n|pluralize:"person,people"}}', {n: 2}), '2 people')
 
 test 'auto-escaping', ->
-  t = new djangoJS.Template '{{variable}}'
+  t = new Templar.Template '{{variable}}'
   equalIgnoreSpace(t.render({variable: '<b>hi</b>'}), '&lt;b&gt;hi&lt;/b&gt;', 'automatic escape')
-  t = new djangoJS.Template '{{variable|safe}}'
+  t = new Templar.Template '{{variable|safe}}'
   equalIgnoreSpace(t.render({variable: '<b>hi</b>'}), '<b>hi</b>', 'automatic escape suppressed')
-  t = new djangoJS.Template('{{"<b>hi</b>"}}')
+  t = new Templar.Template('{{"<b>hi</b>"}}')
   equalIgnoreSpace(t.render({}), '<b>hi</b>', 'literal string not affected')
 
 test 'comments', ->
@@ -114,20 +114,20 @@ test 'comments', ->
   equalIgnoreSpace(renderTemplate('Hello {% comment %} World \n {% test %} }} {% endcomment %} Django!'), 'Hello Django!')
 
 test 'simple tag', ->
-  djangoJS.tags['say_hello'] = djangoJS.simpleTag (context, name) ->
+  Templar.tags['say_hello'] = Templar.simpleTag (context, name) ->
     return "Hello, #{name}!"
   equalIgnoreSpace(renderTemplate("{% say_hello 'World' %}"), 'Hello, World!')
   equalIgnoreSpace(renderTemplate("{% say_hello language %}", {language: 'Django'}), 'Hello, Django!')
 
 test 'inclusion tag', ->
-  t = new djangoJS.Template 'Hello, {{name}}!'
-  djangoJS.tags['say_hello'] = djangoJS.inclusionTag t, (context, name) ->
+  t = new Templar.Template 'Hello, {{name}}!'
+  Templar.tags['say_hello'] = Templar.inclusionTag t, (context, name) ->
     return {name: name}
   equalIgnoreSpace(renderTemplate("{% say_hello 'World' %}"), 'Hello, World!')
   equalIgnoreSpace(renderTemplate("{% say_hello language %}", {language: 'Django'}), 'Hello, Django!')
 
 test 'assignment tag', ->
-  djangoJS.tags['get_hello'] = djangoJS.assignmentTag (context, name) ->
+  Templar.tags['get_hello'] = Templar.assignmentTag (context, name) ->
     return "Hello, #{name}!"
   equalIgnoreSpace(renderTemplate("{% get_hello 'World' as greeting %}{{greeting}}"), 'Hello, World!')
   equalIgnoreSpace(renderTemplate("{% get_hello language as greeting %}{{greeting}}", {language: 'Django'}), 'Hello, Django!')
