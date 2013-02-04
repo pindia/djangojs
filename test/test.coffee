@@ -61,6 +61,13 @@ test 'verbatim tag', ->
   equalIgnoreSpace(t.render({x: 0}), '{% if x == 2 %}Test{% endif %}')
   equalIgnoreSpace(t.render({x: 2}), '{% if x == 2 %}Test{% endif %}Equals 2')
 
+test 'filter tag', ->
+  t = new djangoJS.Template '''
+    {% filter lower %}
+      Some test content {% if x == 5 %} INNER CONTENT {% endif %}
+    {% endfilter %}
+  '''
+  equalIgnoreSpace(t.render({x: 5}), 'some test content inner content')
 
 test 'filters', ->
   t = new djangoJS.Template '{{variable|lower}}'

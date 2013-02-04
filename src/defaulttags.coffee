@@ -117,6 +117,23 @@ djangoJS.tags['verbatim'] = (parser, token) ->
   parser.nextToken()
   return new VerbatimNode(nodelist.render({}))
 
+class FilterNode extends djangoJS.Node
+  constructor: (expr, nodelist) ->
+    this.expr = expr
+    this.nodelist = nodelist
+
+  render: (context) ->
+    output = this.nodelist.render(context)
+    context['_var'] = output
+    return this.expr.resolve(context)
+
+djangoJS.tags['filter'] = (parser, token) ->
+  bits = token.contents.split(' ')
+  expr = new djangoJS.FilterExpression("_var|#{bits[1]}")
+  nodelist = parser.parse(['endfilter'])
+  parser.nextToken()
+  return new FilterNode(expr, nodelist)
+
 
 djangoJS.filters['escape'] = (value) ->
   return value.toString().replace(/&/g, '&amp;')
