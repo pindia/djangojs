@@ -25,23 +25,29 @@ makeInfix = (bp, f) ->
       this.right = parser.expression(bp)
       return this
     this.eval = (context) ->
-      console.log 'eval ', f
-      return f(context, this.left, this.right)
+      return f(this.left.eval(context), this.right.eval(context))
     return this
 
 makePrefix = (bp, f) ->
   return ->
     this.lbp = bp
     this.nud = (parser) ->
-      this.left = left
+      this.left = parser.expression(bp)
       return this
     this.eval = (context) ->
-      return f(context, this.left)
+      return f(this.left.eval(context))
+    return this
 
 operators =
-  '==': makeInfix(10, (context, a, b) -> a.eval(context) == b.eval(context))
-  'and': makeInfix(7, (context, a, b) -> a.eval(context) and b.eval(context))
-  'or' : makeInfix(6, (context, a, b) -> a.eval(context) or b.eval(context))
+  '==':  makeInfix(10, (a, b) -> a == b)
+  '!=':  makeInfix( 10, (a, b) -> a != b)
+  '>':   makeInfix( 10, (a, b) -> a > b)
+  '>=':  makeInfix( 10, (a, b) -> a >= b)
+  '<':   makeInfix( 10, (a, b) -> a < b)
+  '<=':  makeInfix( 10, (a, b) -> a <= b)
+  'not': makePrefix( 8, (a) -> not a)
+  'and': makeInfix(  7, (a, b) -> a and b)
+  'or':  makeInfix(  6, (a, b) -> a or b)
 
 translateToken = (t) ->
   if t of operators
@@ -49,41 +55,39 @@ translateToken = (t) ->
   else
     return new Literal(t)
 
-Templar.parseTokens = (tokens) ->
+Templar.parseIfTokens = (tokens) ->
   tokens = (translateToken(t) for t in tokens)
   tokens.push
     lbp: 0
+  console.log tokens
   parser =
     expression: (rbp) ->
       t = this.current
       this.current = tokens.shift()
       left = t.nud(this)
+      console.log left
       while rbp < this.current.lbp
         t = this.current
         this.current = tokens.shift()
         left = t.led(this, left)
+        console.log left
       return left
   parser.current = tokens[0]
   tokens.shift()
   return parser.expression(0)
 
-
-makeIfCondition = (expr) ->
-  return (context) ->
-    return (new Function("with(this){return #{expr}}")).call(context)
-
 Templar.tags['if'] = (parser, token) ->
   conditionNodelists = []
 
-  expr = token.splitContents().slice(1).join(' ')
-  condition = makeIfCondition(expr)
+  expr = token.splitContents().slice(1)
+  condition = do (expr) -> (context) -> Templar.parseIfTokens(expr).eval(context)
   nodelist = parser.parse(['elif', 'else', 'endif'])
   conditionNodelists.push [condition, nodelist]
   token = parser.nextToken()
 
   while token.contents.substr(0, 4) == 'elif'
-    expr = token.splitContents().slice(1).join(' ')
-    condition = makeIfCondition(expr)
+    expr = token.splitContents().slice(1)
+    condition = do (expr) -> (context) -> Templar.parseIfTokens(expr).eval(context)
     nodelist = parser.parse(['elif', 'else', 'endif'])
     conditionNodelists.push [condition, nodelist]
     token = parser.nextToken()
