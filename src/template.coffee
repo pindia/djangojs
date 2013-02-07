@@ -49,9 +49,13 @@ class Template
   addBlocks: (context) ->
     if '_block' not of context
       context['_block'] = {}
-    for node in this.nodelist._list
-      if node.addToContext?
-        node.addToContext(context)
+    processList = (nodelist) ->
+      for node in nodelist._list
+        if node.addToContext?
+          node.addToContext(context)
+          processList(node.nodelist)
+    processList(this.nodelist)
+
 
   render: (context) ->
     this.addBlocks(context) # Let blocks store themselves in the context

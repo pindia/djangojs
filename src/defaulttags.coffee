@@ -116,12 +116,8 @@ class BlockNode extends Templar.Node
     if '_block' not of context
       result = this.nodelist.render(context)
     else
-      console.log context._block[this.name]
-      block = context._block[this.name].pop()
-      console.log block
-      result = block.nodelist.render(context)
-      while context._block[this.name].length
-        block = context._block[this.name].pop()
+      while block = context._block[this.name].pop()
+        context['_super'] = result
         result = block.nodelist.render(context)
     return result
 

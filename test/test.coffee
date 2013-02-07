@@ -71,6 +71,23 @@ test 'template inheritance', ->
   equalIgnoreSpace(child2.render({}), '<div>Test<br>Test 2</div>Default')
   child3 = new Templar.Template child, '{% block a %}New{% endblock %}{% block b %}Test 2{% endblock %}'
   equalIgnoreSpace(child3.render({}), '<div>New<br>Test 2</div>Default')
+  child4 = new Templar.Template child, '{% block a %}{{_super}} Appended{% endblock %}'
+  equalIgnoreSpace(child4.render({}), '<div>Test Appended<br></div>Default')
+
+test 'nested template inheritence', ->
+  parent = new Templar.Template '''
+    {% block outer %}
+      <div>
+      {% block inner %}
+
+      {% endblock %}
+      </div>
+    {% endblock %} '''
+  child1 = new Templar.Template(parent, '{% block outer %}Test{% endblock %}')
+  equalIgnoreSpace(child1.render({}), 'Test')
+  child2 = new Templar.Template(parent, '{% block inner %}Test{% endblock %}')
+  equalIgnoreSpace(child2.render({}), '<div>Test</div>')
+
 
 test 'verbatim tag', ->
   t = new Templar.Template '''
