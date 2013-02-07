@@ -9,20 +9,19 @@ test 'basic use', ->
   equal(renderTemplate('{{variable}}', {variable: 42}), '42')
 
 test 'if tag parsing', ->
-  expr = Templar.parseIfTokens(['x', '==', '6'])
-  equal(expr.eval({}), false)
-  equal(expr.eval({x: 6}), true)
+  expr = Templar.parseIfTokens(['x', '==', "'6'"])
+  equal(expr({}), false)
+  equal(expr({x: '6'}), true)
   expr = Templar.parseIfTokens(['x', '==', '2', 'or', 'y', '==', '5'])
-  equal(expr.eval({}), false)
-  equal(expr.eval({x: 2}), true)
-  equal(expr.eval({x: 3}), false)
-  equal(expr.eval({y: 5}), true)
-  expr = Templar.parseIfTokens(['x', '==', '2', 'and', 'not', 'y', '>', '5'])
-  equal(expr.eval({x: 2, y: 2}), true)
-  equal(expr.eval({x: 2, y: 7}), false)
+  equal(expr({}), false)
+  equal(expr({x: 2}), true)
+  equal(expr({x: 3}), false)
+  equal(expr({y: 5}), true)
   expr = Templar.parseIfTokens(['x', 'and', 'not', 'y'])
-  equal(expr.eval({x: true, y:true}), false)
-  equal(expr.eval({x: true, y: false}), true)
+  equal(expr({x: true, y:true}), false)
+  equal(expr({x: true, y: false}), true)
+  expr = Templar.parseIfTokens(["' + ok(false, 'code injected') + '"]) # Assert that injected code cannot run
+  expr({})
 
 test 'if tag', ->
   t = new Templar.Template '''

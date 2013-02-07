@@ -9,85 +9,39 @@ class IfNode extends Templar.Node
         return nodelist.render(context)
     return ''
 
-Literal = (value) ->
-  this.expr = new Templar.FilterExpression(value)
-  this.nud = (parser) ->
-    return this
-  this.eval = (context) ->
-    return this.expr.resolve(context)
-  return this
-
-makeInfix = (bp, f) ->
-  return ->
-    this.lbp = bp
-    this.led = (parser, left) ->
-      this.left = left
-      this.right = parser.expression(bp)
-      return this
-    this.eval = (context) ->
-      return f(this.left.eval(context), this.right.eval(context))
-    return this
-
-makePrefix = (bp, f) ->
-  return ->
-    this.lbp = bp
-    this.nud = (parser) ->
-      this.left = parser.expression(bp)
-      return this
-    this.eval = (context) ->
-      return f(this.left.eval(context))
-    return this
-
 operators =
-  '==':  makeInfix(10, (a, b) -> a == b)
-  '!=':  makeInfix( 10, (a, b) -> a != b)
-  '>':   makeInfix( 10, (a, b) -> a > b)
-  '>=':  makeInfix( 10, (a, b) -> a >= b)
-  '<':   makeInfix( 10, (a, b) -> a < b)
-  '<=':  makeInfix( 10, (a, b) -> a <= b)
-  'not': makePrefix( 8, (a) -> not a)
-  'and': makeInfix(  7, (a, b) -> a and b)
-  'or':  makeInfix(  6, (a, b) -> a or b)
-
-translateToken = (t) ->
-  if t of operators
-    return new operators[t]
-  else
-    return new Literal(t)
+  '==': '=='
+  '!=': '!='
+  '>=': '>='
+  '<=': '<='
+  '>': '>'
+  '<': '<'
+  'and': '&&'
+  'or': '||'
+  'not': '!'
 
 Templar.parseIfTokens = (tokens) ->
-  tokens = (translateToken(t) for t in tokens)
-  tokens.push
-    lbp: 0
-  console.log tokens
-  parser =
-    expression: (rbp) ->
-      t = this.current
-      this.current = tokens.shift()
-      left = t.nud(this)
-      console.log left
-      while rbp < this.current.lbp
-        t = this.current
-        this.current = tokens.shift()
-        left = t.led(this, left)
-        console.log left
-      return left
-  parser.current = tokens[0]
-  tokens.shift()
-  return parser.expression(0)
+  s = []
+  for token in tokens
+    if token of operators
+      s.push operators[token]
+    else
+      token = token.replace(/\'/g, "\\'") # Prevent quote injection
+      s.push "(new Templar.FilterExpression('#{token}').resolve(context))"
+  return new Function("context=arguments[0]; return " + s.join(''))
 
 Templar.tags['if'] = (parser, token) ->
   conditionNodelists = []
 
   expr = token.splitContents().slice(1)
-  condition = do (expr) -> (context) -> Templar.parseIfTokens(expr).eval(context)
+  condition = Templar.parseIfTokens(expr)
   nodelist = parser.parse(['elif', 'else', 'endif'])
   conditionNodelists.push [condition, nodelist]
   token = parser.nextToken()
 
   while token.contents.substr(0, 4) == 'elif'
     expr = token.splitContents().slice(1)
-    condition = do (expr) -> (context) -> Templar.parseIfTokens(expr).eval(context)
+    condition = Templar.parseIfTokens(expr)
     nodelist = parser.parse(['elif', 'else', 'endif'])
     conditionNodelists.push [condition, nodelist]
     token = parser.nextToken()
