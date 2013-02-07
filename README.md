@@ -53,6 +53,18 @@ Some filters take arguments with the syntax `{{name|default:"nobody"}}`. The `de
 
 Multiple filters can be chained, with the output of one filter applied to the next. `{{name|lower|default:"nobody"}}` will convert `name` to lowercase, or display `nobody` if it is empty.
 
+### Template Inheritance
+
+Like Django templates, Templar allows you to define hierarchies of templates that inherit "blocks" of HTML from each other and can selectively override them. To use inheritance, pass the parent template as the first argument of the template constructor:
+
+```javascript
+>>> var parent = new Templar.Template('<div id="wrapper">{% block content %}{% endblock %}</div>');
+>>> var child = new Templar.Template(parent, '{% block content %}Content{% endblock %}');
+>>> child.render({});
+"<div id="wrapper">Content</div>"
+```
+
+
 ### Automatic Escaping
 
 To protect against [Cross-site scripting](http://en.wikipedia.org/wiki/Cross-site_scripting) attacks, all template variables are automatically HTML-escaped before being output. This means that the template:

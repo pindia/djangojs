@@ -35,13 +35,28 @@ class Token
     return this.contents.match(smartSplitRe)
 
 class Template
-  constructor: (templateString) ->
+  constructor: (parent, templateString) ->
+    if parent instanceof Template
+      this.parent = parent
+    else
+      this.parent = null
+      templateString = parent
     l = new Lexer(templateString)
     tokens = l.tokenize()
     p = new Parser(tokens)
     this.nodelist = p.parse()
 
+  addBlocks: (context) ->
+    if '_block' not of context
+      context['_block'] = {}
+    for node in this.nodelist._list
+      if node.addToContext?
+        node.addToContext(context)
+
   render: (context) ->
+    this.addBlocks(context) # Let blocks store themselves in the context
+    if this.parent
+      return this.parent.render(context)
     return this.nodelist.render(context)
 
 

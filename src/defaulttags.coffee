@@ -101,6 +101,36 @@ Templar.tags['for'] = (parser, token) ->
     nodelistEmpty = new Templar.NodeList()
   return new ForNode(loopvar, sequence, nodelistLoop, nodelistEmpty)
 
+class BlockNode extends Templar.Node
+  constructor:  (name, nodelist) ->
+    this.name = name
+    this.nodelist = nodelist
+
+  addToContext: (context) ->
+    if this.name of context._block
+      context._block[this.name].push this
+    else
+      context._block[this.name] = [this]
+
+  render: (context) ->
+    if '_block' not of context
+      result = this.nodelist.render(context)
+    else
+      console.log context._block[this.name]
+      block = context._block[this.name].pop()
+      console.log block
+      result = block.nodelist.render(context)
+      while context._block[this.name].length
+        block = context._block[this.name].pop()
+        result = block.nodelist.render(context)
+    return result
+
+Templar.tags['block'] = (parser, token) ->
+  name = token.splitContents()[1]
+  nodelist = parser.parse(['endblock'])
+  token = parser.nextToken()
+  return new BlockNode(name, nodelist)
+
 
 class CycleNode extends Templar.Node
   constructor: (cyclevars) ->

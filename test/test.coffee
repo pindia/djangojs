@@ -62,6 +62,16 @@ test 'nested for tags', ->
   '''
   equalIgnoreSpace(t.render({seq1: ['a', 'b'], seq2: ['c', 'd']}), '1, 1, a, c 1, 2, a, d 2, 1, b, c 2, 2, b, d')
 
+test 'template inheritance', ->
+  parent = new Templar.Template '<div>{% block a %}{% endblock %}<br>{% block b %}{% endblock %}</div>{% block c %}Default{% endblock %}'
+  child = new Templar.Template parent, '{% block a %}Test{% endblock %}'
+  equalIgnoreSpace(parent.render({}), '<div><br></div>Default')
+  equalIgnoreSpace(child.render({}), '<div>Test<br></div>Default')
+  child2 = new Templar.Template child, '{% block b %}Test 2{% endblock %}'
+  equalIgnoreSpace(child2.render({}), '<div>Test<br>Test 2</div>Default')
+  child3 = new Templar.Template child, '{% block a %}New{% endblock %}{% block b %}Test 2{% endblock %}'
+  equalIgnoreSpace(child3.render({}), '<div>New<br>Test 2</div>Default')
+
 test 'verbatim tag', ->
   t = new Templar.Template '''
     {% verbatim %}
