@@ -9,6 +9,64 @@ class IfNode extends Templar.Node
         return nodelist.render(context)
     return ''
 
+Literal = (value) ->
+  this.expr = new Templar.FilterExpression(value)
+  this.nud = (parser) ->
+    return this
+  this.eval = (context) ->
+    return this.expr.resolve(context)
+  return this
+
+makeInfix = (bp, f) ->
+  return ->
+    this.lbp = bp
+    this.led = (parser, left) ->
+      this.left = left
+      this.right = parser.expression(bp)
+      return this
+    this.eval = (context) ->
+      console.log 'eval ', f
+      return f(context, this.left, this.right)
+    return this
+
+makePrefix = (bp, f) ->
+  return ->
+    this.lbp = bp
+    this.nud = (parser) ->
+      this.left = left
+      return this
+    this.eval = (context) ->
+      return f(context, this.left)
+
+operators =
+  '==': makeInfix(10, (context, a, b) -> a.eval(context) == b.eval(context))
+  'and': makeInfix(7, (context, a, b) -> a.eval(context) and b.eval(context))
+  'or' : makeInfix(6, (context, a, b) -> a.eval(context) or b.eval(context))
+
+translateToken = (t) ->
+  if t of operators
+    return new operators[t]
+  else
+    return new Literal(t)
+
+Templar.parseTokens = (tokens) ->
+  tokens = (translateToken(t) for t in tokens)
+  tokens.push
+    lbp: 0
+  parser =
+    expression: (rbp) ->
+      t = this.current
+      this.current = tokens.shift()
+      left = t.nud(this)
+      while rbp < this.current.lbp
+        t = this.current
+        this.current = tokens.shift()
+        left = t.led(this, left)
+      return left
+  parser.current = tokens[0]
+  tokens.shift()
+  return parser.expression(0)
+
 
 makeIfCondition = (expr) ->
   return (context) ->
