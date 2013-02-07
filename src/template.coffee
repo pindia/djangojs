@@ -137,7 +137,7 @@ class NodeList
 class Variable
   constructor: (name) ->
     this.name = name
-    if this.name.match('[0-9]+')
+    if this.name.match('^[0-9]+$')
       value = parseInt(this.name)
       this.resolve = (context) -> return value
     if this.name[0] == '"' or this.name[0] == "'" # Literal "variable"
