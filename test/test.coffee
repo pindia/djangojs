@@ -173,3 +173,49 @@ test 'assignment tag', ->
     return "Hello, #{name}!"
   equalIgnoreSpace(renderTemplate("{% get_hello 'World' as greeting %}{{greeting}}"), 'Hello, World!')
   equalIgnoreSpace(renderTemplate("{% get_hello language as greeting %}{{greeting}}", {language: 'Django'}), 'Hello, Django!')
+
+test 'haml contrib module', ->
+  s = performTranslateHaml '''
+  %div
+    #a
+      #b
+        #c
+        #d
+    #e
+      #f
+      #g
+        #h
+  '''
+  equalIgnoreSpace s, '''
+    <div>
+    <div id="a"><div id="b"><div id="c"></div><div id="d"></div></div></div>
+    <div id="e"><div id="f"></div><div id="g"><div id="h"></div></div></div>
+    </div>    '''
+  s = performTranslateHaml '''
+    #outer
+      #inner
+        {% if condition %}
+          %h1.primary Test Header
+        {% endif %}
+        .body
+          Body text
+          More text
+        %h1.primary {{ variable }}
+  '''
+  equalIgnoreSpace s, '''
+    <div id="outer">
+      <div id="inner">
+        {% if condition %}
+          <h1 class="primary">Test Header</h1>
+        {% endif %}
+        <div class="body">
+          Body text
+          More text
+        </div>
+        <h1 class="primary">{{variable}}</h1>
+      </div>
+    </div>
+
+  '''
+  s = performTranslateHaml '%a(style="background: red;" href="http://www.google.com") Text'
+  equalIgnoreSpace s, '<a style="background:red; " href="http://www.google.com">Text</a> '
