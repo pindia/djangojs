@@ -14,6 +14,13 @@ test 'empty variable', ->
 test 'function variable', ->
   equal(renderTemplate('{{variable}}', {variable: -> 42}), '42')
 
+test 'context processor', ->
+  equal(renderTemplate('{{variable}}', {}), '')
+  Templar.contextProcessors.push -> {variable: 42}
+  equal(renderTemplate('{{variable}}', {}), '42')
+  Templar.contextProcessors.length = 0
+  equal(renderTemplate('{{variable}}', {}), '')
+
 test 'if tag parsing', ->
   expr = Templar.parseIfTokens(['x', '==', "'6'"])
   equal(expr({}), false)

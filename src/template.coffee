@@ -34,6 +34,8 @@ class Token
   splitContents: ->
     return this.contents.match(smartSplitRe)
 
+globalContextProcessors = []
+
 class Template
   constructor: (parent, templateString) ->
     if parent instanceof Template
@@ -61,6 +63,8 @@ class Template
     this.addBlocks(context) # Let blocks store themselves in the context
     if this.parent
       return this.parent.render(context)
+    for processor in globalContextProcessors
+      $.extend(context, processor())
     return this.nodelist.render(context)
 
 
@@ -267,6 +271,7 @@ window.Templar =
   NodeList: NodeList
   tags: globalTags
   filters: globalFilters
+  contextProcessors: globalContextProcessors
   simpleTag: simpleTag
   inclusionTag: inclusionTag
   assignmentTag: assignmentTag
