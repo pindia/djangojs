@@ -171,6 +171,8 @@ class Variable
       c = c[bit]
       if c is undefined
         return undefined
+    if typeof c == 'function'
+      c = c()
     return c
 
 filterRe = /([^|]+)|(?:\|(\w+)(?:\:([\S\.]+))?)/g

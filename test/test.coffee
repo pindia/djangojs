@@ -11,6 +11,9 @@ test 'basic use', ->
 test 'empty variable', ->
   equal(renderTemplate('Test {{variable}} message', {}), 'Test  message')
 
+test 'function variable', ->
+  equal(renderTemplate('{{variable}}', {variable: -> 42}), '42')
+
 test 'if tag parsing', ->
   expr = Templar.parseIfTokens(['x', '==', "'6'"])
   equal(expr({}), false)
