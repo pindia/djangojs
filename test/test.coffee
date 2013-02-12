@@ -8,6 +8,9 @@ equalIgnoreSpace = (a, b, msg=undefined) ->
 test 'basic use', ->
   equal(renderTemplate('{{variable}}', {variable: 42}), '42')
 
+test 'empty variable', ->
+  equal(renderTemplate('Test {{variable}} message', {}), 'Test  message')
+
 test 'if tag parsing', ->
   expr = Templar.parseIfTokens(['x', '==', "'6'"])
   equal(expr({}), false)

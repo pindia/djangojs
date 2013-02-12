@@ -219,7 +219,7 @@ class VariableNode extends Node
 
   render: (context) ->
     value = this.expr.resolve(context)
-    if not value.safe
+    if value? and not value.safe
       value = globalFilters.escape(value)
     return value
 
